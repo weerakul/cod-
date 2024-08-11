@@ -1,0 +1,61 @@
+//code.gs
+function doGet() {
+  return HtmlService.createTemplateFromFile('index')
+  .evaluate()
+  .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+  .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+}
+//ฟังก์ชั่นบันทึก
+function record(data){
+  var ss = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet()
+  ss.appendRow([data.input1,data.input2])
+}
+
+
+//index.html
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+  </head>
+  <body>
+    <!--ชื่อหัวข้อเว็บ-->
+    <h1> แบบฟอร์มบันทึกข้อมูล </h1>
+
+    <!--ฟอร์มกรอกข้อมูล-->
+    <form id="form" onsubmit="save(this)">
+      <label>ชื่อ</label>
+      <input type="text" name="input1" placeholder="ชื่อ" required > 
+      <label>นามสกุล</label>
+      <input type="text" name="input2" placeholder="นามสกุล" required>
+      <br>
+      <br>
+      <button type="submit">บันทึกข้อมูล</button>
+    </form>  
+
+    <script>
+      function save(data){
+        event.preventDefault()
+        google.script.run.withSuccessHandler(success).record(data)
+      }
+      function success(){
+        document.querySelector("form").reset()
+
+        Swal.fire({
+  position: 'center',
+  icon: 'success',
+  title: 'บันทึกข้อมูลเรียบร้อย',
+  showConfirmButton: false,
+  timer: 1500
+})
+      }
+
+      
+    </script>
+
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  </body>
+</html>
+@weerakul
+Comment
