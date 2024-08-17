@@ -1,0 +1,317 @@
+/**
+ * Upload files to Google Drive and save record to Google Sheet
+ * By www.bpwebs.com
+ * References: https://stackoverflow.com/a/26497772/2391195
+ *             https://developers.google.com/apps-script/guides/html/communication#index.html_4
+ */
+
+//code.gs
+var folderID = "xxxxx"; //Replace the "root"with folder ID to upload files to a specific folder
+var sheetName = "xxxx"; //Replace the "Data" with your data sheet name
+
+function doGet() {
+  return HtmlService.createTemplateFromFile('Index').evaluate()
+  .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+  .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+}
+
+/* @Include JavaScript and CSS Files */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename)
+    .getContent();
+}
+
+function uploadFiles(formObject) {
+  try {
+    var folder = DriveApp.getFolderById("xxxxx");
+    var sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
+    var fileUrl = "";
+    var fileName = "";
+
+    //Upload file if exists and update the file url
+    if (formObject.myFile.length > 0) {
+      var blob = formObject.myFile;
+      var file = folder.createFile(blob);
+      file.setDescription("Uploaded by " + formObject.first_name);
+      fileUrl = file.getUrl();
+      fileName = file.getName();
+    } else {
+      fileUrl = "Record saved without a file";
+    }
+
+    //Saving records to Google Sheet
+    sheet.appendRow([
+      formObject.first_name,
+      formObject.last_name,
+      formObject.st_code,
+      formObject.gender,
+      formObject.dateOfBirth,
+      formObject.email,
+      formObject.phone,
+      formObject.line,
+      formObject.message,
+      fileName,
+      fileUrl,
+      Utilities.formatDate(new Date(), "GMT+5:30", "yyyy-MM-dd'T'HH:mm:ss'Z'")]);
+
+    // Return the URL of the saved file
+    return fileUrl;
+
+  } catch (error) {
+    return error.toString();
+  }
+}
+**************************************
+  ****************************
+  **********************
+  **********
+//index.html
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.js"></script>
+  <?!= include('JavaScript'); ?>
+</head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800;900&display=swap');
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Prompt', sans-serif
+  }
+
+  body {
+    background: linear-gradient(45deg, #ce1e53, #8f00c7);
+    min-height: 100vh
+  }
+
+  body::-webkit-scrollbar {
+    display: none
+  }
+
+  .wrapper {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 30px 45px;
+    box-shadow: 5px 25px 35px #3535356b
+  }
+
+  .wrapper label {
+    display: block;
+    padding-bottom: 0.2rem
+  }
+
+  .wrapper .form .row {
+    padding: 0.6rem 0
+  }
+
+  .wrapper .form .row .form-control {
+    box-shadow: none
+  }
+
+  .wrapper .form .option {
+    position: relative;
+    padding-left: 20px;
+    cursor: pointer
+  }
+
+  .wrapper .form .option input {
+    opacity: 0
+  }
+
+  .wrapper .form .checkmark {
+    position: absolute;
+    top: 1px;
+    left: 0;
+    height: 20px;
+    width: 20px;
+    border: 1px solid #bbb;
+    border-radius: 50%
+  }
+
+  .wrapper .form .option input:checked~.checkmark:after {
+    display: block
+  }
+
+  .wrapper .form .option:hover .checkmark {
+    background: #f3f3f3
+  }
+
+  .wrapper .form .option .checkmark:after {
+    content: "";
+    width: 10px;
+    height: 10px;
+    display: block;
+    background: linear-gradient(45deg, #ce1e53, #8f00c7);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    transition: 300ms ease-in-out 0s
+  }
+
+  .wrapper .form .option input[type="radio"]:checked~.checkmark {
+    background: #fff;
+    transition: 300ms ease-in-out 0s
+  }
+
+  .wrapper .form .option input[type="radio"]:checked~.checkmark:after {
+    transform: translate(-50%, -50%) scale(1)
+  }
+
+  #sub {
+    display: block;
+    width: 100%;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 5px;
+    color: #333
+  }
+
+  #sub:focus {
+    outline: none
+  }
+
+  @media(max-width: 768.5px) {
+    .wrapper {
+      margin: 30px
+    }
+
+    .wrapper .form .row {
+      padding: 0
+    }
+  }
+
+  @media(max-width: 400px) {
+    .wrapper {
+      padding: 50px;
+      margin: 20px
+    }
+  }
+</style>
+</br>
+
+<body>
+
+  <body oncontextmenu='return false' class='snippet-body'>
+    <div class="wrapper rounded bg-white">
+      <div class="row d-flex justify-content-center">
+        <div class="col-xl-14 col-lg-16 col-md-18 col-22 text-Left">
+          <div class="container">
+            <form id="myForm" onsubmit="handleFormSubmit(this)">
+              <p class="h4 mb-4 text-center">(ตัวอย่าง)แบบฟอร์มนำส่งเล่มสารนิพนธ์ / วิทยานิพนธ์ </p>
+              <p class="h10 mb-4 text-right">ผู้พัฒนา : พ่อมดตะนอย </p>
+              <div class="form-row">
+                <div class="form-group col-sm-6">
+                  <label for="first_name">ชื่อนักศึกษา</label>
+                  <input type="text" class="form-control" id="first_name" name="first_name" placeholder="ใส่ชื่อมีคำหน้า" required>
+                </div>
+                <div class="form-group col-sm-6">
+                  <label for="last_name">นามสกุล</label>
+                  <input type="text" class="form-control" id="last_name" name="last_name" placeholder="นาสกุล" required>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-sm-6">
+                  <p>เพศ</p>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="gender" id="male" value="ชาย">
+                    <label class="form-check-label" for="male">เพศชาย</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="gender" id="female" value="หญิง">
+                    <label class="form-check-label" for="female">เพศหญิง</label>
+                  </div>
+                </div>
+                <div class="form-group col-sm-6">
+                  <label for="st_code">รหัสนักศึกษา</label>
+                  <input type="text" class="form-control" id="st_code" name="st_code" placeholder="รหัสนักศึกษา" required>
+                </div>
+                <div class="form-group col-sm-6">
+                  <label for="dateOfBirth">วัน/เดือน/ปี (ระบุวันที่ยื่นคำร้อง | คลิกรูปปฏิทินเลือกได้เลย)</label>
+                  <input type="date" class="form-control" id="dateOfBirth" name="dateOfBirth" required>
+                </div>
+                <div class="form-group col-sm-6">
+                  <label for="email">Email</label>
+                  <input type="email" class="form-control" id="email" name="email" placeholder="ระบุ Email" required>
+                </div>
+                <div class="form-group col-sm-6">
+                  <label for="phone">หมายเลขโทรศัพท์</label>
+                  <input type="tel" class="form-control" id="phone" name="phone" placeholder="ระบุ หมายเลขโทรศัพท์ที่ติดต่อได้">
+                </div>
+                <div class="form-group col-sm-6">
+                  <label for="phone">ID Line</label>
+                  <input type="tel" class="form-control" id="line" name="line" placeholder="ระบุ ID Line เพื่อสะดวกในการติดต่อ">
+                </div>
+                <div class="form-group col-lg-12">
+                  <label for="message">ระบุชื่อสารนิพนธ์ / วิทยานิพนธ์ (ภาษาไทยและภาษาอังกฤษ)</label>
+                  <textarea input type="text" id="message" name="message" class="form-control col-sm-16" placeholder="ระบุ..ชื่องานที่นำส่ง"     
+                  rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="FormControlFile">อัพโหลดไฟล์</label>
+                  <input name="myFile" class="form-control-file" type="file" id="FormControlFile" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">บันทึกนำส่ง(รอสักครู่)</button>
+            </form>
+            <div id="output"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  </body>
+  </br>
+
+</html>
+************************************
+*****************************
+************************
+//code javascript
+<script>
+  function preventFormSubmit() {
+        var forms = document.querySelectorAll('form');
+        for (var i = 0; i < forms.length; i++) {
+          forms[i].addEventListener('submit', function(event) {
+            event.preventDefault();
+          });
+        }
+      }
+  window.addEventListener('load', preventFormSubmit);
+
+  function handleFormSubmit(formObject){
+    google.script.run.withSuccessHandler(updateUrl).withFailureHandler(onFailure).uploadFiles(formObject);
+  }
+
+  function updateUrl(url) {
+    var div = document.getElementById('output');
+    if(isValidURL(url)){
+      div.innerHTML = '<div class="alert alert-success" role="alert"><a href="'+ url +'!</div>';
+      document.getElementById("myForm").reset();
+
+    }
+    
+    else{
+      //Show warning message if file is not uploaded or provided
+      div.innerHTML = '<div class="alert alert-danger" role="alert">'+ url +'!</div>';
+    }
+  }
+
+  function onFailure(error) {
+    var div = document.getElementById('output');
+    div.innerHTML = '<div class="alert alert-danger" role="alert">'+ error.message +'!</div>';
+  }
+
+  function isValidURL(string) {
+    var res = string.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g);
+    return (res !== null);
+  }
+</script>
